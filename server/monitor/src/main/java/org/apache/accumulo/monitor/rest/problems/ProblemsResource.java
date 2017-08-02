@@ -16,6 +16,7 @@
  */
 package org.apache.accumulo.monitor.rest.problems;
 
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
@@ -32,10 +33,12 @@ import javax.ws.rs.core.MediaType;
 import org.apache.accumulo.core.client.impl.Table;
 import org.apache.accumulo.core.client.impl.Tables;
 import org.apache.accumulo.monitor.Monitor;
+import org.apache.accumulo.monitor.util.ParameterValidator;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.problems.ProblemReport;
 import org.apache.accumulo.server.problems.ProblemReports;
 import org.apache.accumulo.server.problems.ProblemType;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,9 +99,13 @@ public class ProblemsResource {
   public void clearTableProblems(@QueryParam("s") String tableID) {
     Logger log = LoggerFactory.getLogger(Monitor.class);
     try {
+      tableID = ParameterValidator.sanitizeParameter(tableID);
+      if (StringUtils.isEmpty(tableID)) {
+        throw new Exception("tableId QueryParameter was blank.");
+      }
       ProblemReports.getInstance(Monitor.getContext()).deleteProblemReports(new Table.ID(tableID));
     } catch (Exception e) {
-      log.error("Failed to delete problem reports for table " + tableID, e);
+      log.error("Failed to delete problem reports for table " + (StringUtils.isEmpty(tableID) ? StringUtils.EMPTY : tableID), e);
     }
   }
 
@@ -147,9 +154,17 @@ public class ProblemsResource {
   public void clearDetailsProblems(@QueryParam("table") String tableID, @QueryParam("resource") String resource, @QueryParam("ptype") String ptype) {
     Logger log = LoggerFactory.getLogger(Monitor.class);
     try {
+      tableID = ParameterValidator.sanitizeParameter(tableID);
+      resource = ParameterValidator.sanitizeParameter(resource);
+      ptype = ParameterValidator.sanitizeParameter(ptype);
+      
+      if (StringUtils.isEmpty(tableID) || StringUtils.isEmpty(resource) || StringUtils.isEmpty(ptype)) {
+        throw new Exception("One or more Query Parameters was blank");
+      }
+      
       ProblemReports.getInstance(Monitor.getContext()).deleteProblemReport(new Table.ID(tableID), ProblemType.valueOf(ptype), resource);
     } catch (Exception e) {
-      log.error("Failed to delete problem reports for table " + tableID, e);
+      log.error("Failed to delete problem reports for table " + (StringUtils.isBlank(tableID) ? "" : tableID), e);
     }
   }
 

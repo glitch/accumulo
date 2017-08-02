@@ -51,6 +51,7 @@ import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.util.Pair;
 import org.apache.accumulo.monitor.Monitor;
+import org.apache.accumulo.monitor.util.ParameterValidator;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.security.SecurityUtil;
 import org.apache.accumulo.tracer.SpanTree;
@@ -59,6 +60,7 @@ import org.apache.accumulo.tracer.TraceDump;
 import org.apache.accumulo.tracer.TraceFormatter;
 import org.apache.accumulo.tracer.thrift.Annotation;
 import org.apache.accumulo.tracer.thrift.RemoteSpan;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.security.UserGroupInformation;
 
@@ -84,6 +86,10 @@ public class TracesResource {
   @GET
   public RecentTracesList getTraces(@DefaultValue("10") @PathParam("minutes") int minutes) throws Exception {
 
+    if (minutes >= 60 || minutes <= 0) {
+      minutes = 10; // use default
+    }
+    
     RecentTracesList recentTraces = new RecentTracesList();
 
     Pair<Scanner,UserGroupInformation> pair = getScanner();
@@ -119,7 +125,7 @@ public class TracesResource {
   /**
    * Generates a list of traces filtered by type and range of minutes
    *
-   * @param type
+   * @param typeParameter
    *          Type of the trace
    * @param minutes
    *          Range of minutes
@@ -127,8 +133,19 @@ public class TracesResource {
    */
   @Path("listType/{type}/{minutes}")
   @GET
-  public TraceType getTracesType(@PathParam("type") String type, @PathParam("minutes") int minutes) throws Exception {
+  public TraceType getTracesType(@PathParam("type") String typeParameter, @PathParam("minutes") int minutes) throws Exception {
 
+    if (StringUtils.isEmpty(typeParameter)) {
+      throw new Exception("Specified type was empty");
+    }
+
+    // Need finalized value for use in anonymous function below.
+    final String type = ParameterValidator.sanitizeParameter(typeParameter);
+    
+    if (minutes >= 60 || minutes < 0) {
+      throw new Exception("minutes was not of range [0-59], was " + String.valueOf(minutes));
+    }
+    
     TraceType typeTraces = new TraceType(type);
 
     Pair<Scanner,UserGroupInformation> pair = getScanner();
@@ -176,11 +193,14 @@ public class TracesResource {
   @Path("show/{id}")
   @GET
   public TraceList getTracesType(@PathParam("id") String id) throws Exception {
-    TraceList traces = new TraceList(id);
 
-    if (id == null) {
+    if (StringUtils.isEmpty(id)) {
       return null;
     }
+
+    id = ParameterValidator.sanitizeParameter(id);
+
+    TraceList traces = new TraceList(id);
 
     Pair<Scanner,UserGroupInformation> entry = getScanner();
     final Scanner scanner = entry.getFirst();
@@ -258,8 +278,8 @@ public class TracesResource {
     long startTime = endTime - millisSince;
 
     String startHexTime = Long.toHexString(startTime), endHexTime = Long.toHexString(endTime);
-    while (startHexTime.length() < endHexTime.length()) {
-      startHexTime = "0" + startHexTime;
+    if (startHexTime.length() < endHexTime.length()) {
+      StringUtils.leftPad(startHexTime, endHexTime.length(), '0');
     }
 
     return new Range(new Text("start:" + startHexTime), new Text("start:" + endHexTime));

@@ -51,11 +51,13 @@ import org.apache.accumulo.core.util.AddressUtil;
 import org.apache.accumulo.core.zookeeper.ZooUtil;
 import org.apache.accumulo.monitor.Monitor;
 import org.apache.accumulo.monitor.rest.master.MasterResource;
+import org.apache.accumulo.monitor.util.ParameterValidator;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.master.state.DeadServerList;
 import org.apache.accumulo.server.util.ActionStatsUpdator;
 
 import com.google.common.net.HostAndPort;
+import org.apache.commons.lang.StringUtils;
 
 /**
  *
@@ -103,8 +105,11 @@ public class TabletServerResource {
   @POST
   @Consumes(MediaType.TEXT_PLAIN)
   public void clearDeadServer(@QueryParam("server") String server) throws Exception {
-    DeadServerList obit = new DeadServerList(ZooUtil.getRoot(Monitor.getContext().getInstance()) + Constants.ZDEADTSERVERS);
-    obit.delete(server);
+    if (StringUtils.isNotBlank(server)) {
+      server = ParameterValidator.sanitizeParameter(server);
+      DeadServerList obit = new DeadServerList(ZooUtil.getRoot(Monitor.getContext().getInstance()) + Constants.ZDEADTSERVERS);
+      obit.delete(server);
+    }
   }
 
   /**
@@ -141,28 +146,27 @@ public class TabletServerResource {
   /**
    * Generates details for the selected tserver
    *
-   * @param tserverAddr
+   * @param tserverAddress
    *          TServer name
    * @return TServer details
    */
   @Path("{address}")
   @GET
-  public TabletServerSummary getTserverDetails(@PathParam("address") String tserverAddr) throws Exception {
+  public TabletServerSummary getTserverDetails(@PathParam("address") String tserverAddress) throws Exception {
 
-    String tserverAddress = tserverAddr;
-
+    if (StringUtils.isEmpty(tserverAddress)) {
+      return null;
+    }
+    tserverAddress = ParameterValidator.sanitizeParameter(tserverAddress);
     boolean tserverExists = false;
-    if (tserverAddress != null && tserverAddress.isEmpty() == false) {
-      for (TabletServerStatus ts : Monitor.getMmi().getTServerInfo()) {
-        if (tserverAddress.equals(ts.getName())) {
-          tserverExists = true;
-          break;
-        }
+    for (TabletServerStatus ts : Monitor.getMmi().getTServerInfo()) {
+      if (tserverAddress.equals(ts.getName())) {
+        tserverExists = true;
+        break;
       }
     }
 
-    if (tserverAddress == null || tserverAddress.isEmpty() || tserverExists == false) {
-
+    if (!tserverExists) {
       return null;
     }
 

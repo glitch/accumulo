@@ -16,6 +16,7 @@
  */
 package org.apache.accumulo.monitor.rest.tables;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,11 +47,13 @@ import org.apache.accumulo.core.metadata.RootTable;
 import org.apache.accumulo.monitor.Monitor;
 import org.apache.accumulo.monitor.rest.tservers.TabletServer;
 import org.apache.accumulo.monitor.rest.tservers.TabletServers;
+import org.apache.accumulo.monitor.util.ParameterValidator;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.master.state.MetaDataTableScanner;
 import org.apache.accumulo.server.master.state.TabletLocationState;
 import org.apache.accumulo.server.tables.TableManager;
 import org.apache.accumulo.server.util.TableInfoUtil;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.Text;
 
 /**
@@ -81,11 +84,14 @@ public class TablesResource {
     /*
      * Add the tables that have the selected namespace Asterisk = All namespaces Hyphen = Default namespace
      */
-    for (String key : namespaces.keySet()) {
-      if (namespace.equals("*") || namespace.equals(key) || (key.isEmpty() && namespace.equals("-"))) {
-        tableNamespace.addTable(new TableNamespace(key));
+    if (null != namespace) {
+      for (String key : namespaces.keySet()) {
+        if (namespace.equals("*") || namespace.equals(key) || (key.isEmpty() && namespace.equals("-"))) {
+          tableNamespace.addTable(new TableNamespace(key));
+        }
       }
     }
+
 
     return generateTables(tableNamespace);
   }
@@ -161,7 +167,8 @@ public class TablesResource {
    */
   @GET
   @Path("namespace/{namespace}")
-  public TablesList getTable(@PathParam("namespace") String namespace) {
+  public TablesList getTable(@PathParam("namespace") String namespace) throws UnsupportedEncodingException {
+    namespace = ParameterValidator.sanitizeParameter(namespace);
     return generateTables(namespace);
   }
 
@@ -174,7 +181,9 @@ public class TablesResource {
    */
   @GET
   @Path("namespaces/{namespaces}")
-  public TablesList getTableWithNamespace(@PathParam("namespaces") String namespaceList) {
+  public TablesList getTableWithNamespace(@PathParam("namespaces") String namespaceList) throws UnsupportedEncodingException {
+    namespaceList = ParameterValidator.sanitizeParameter(namespaceList);
+     TODO replace encoded comma value if it is infact encoded; that or user better regex below
     SortedMap<String,Namespace.ID> namespaces = Namespaces.getNameToIdMap(Monitor.getContext().getInstance());
 
     TablesList tableNamespace = new TablesList();
@@ -202,11 +211,16 @@ public class TablesResource {
   @Path("{tableId}")
   @GET
   public TabletServers getParticipatingTabletServers(@PathParam("tableId") String tableIdStr) throws Exception {
+    tableIdStr = ParameterValidator.sanitizeParameter(tableIdStr);
     Instance instance = Monitor.getContext().getInstance();
     Table.ID tableId = new Table.ID(tableIdStr);
 
     TabletServers tabletServers = new TabletServers(Monitor.getMmi().tServerInfo.size());
 
+    if (StringUtils.isBlank(tableIdStr)) {
+      return tabletServers;
+    }
+    
     TreeSet<String> locs = new TreeSet<>();
     if (RootTable.ID.equals(tableId)) {
       locs.add(instance.getRootTabletLocation());

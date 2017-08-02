@@ -16,6 +16,7 @@
  */
 package org.apache.accumulo.monitor.view;
 
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,8 @@ import org.apache.accumulo.core.client.impl.Table;
 import org.apache.accumulo.core.client.impl.Tables;
 import org.apache.accumulo.core.util.AddressUtil;
 import org.apache.accumulo.monitor.Monitor;
+import org.apache.accumulo.monitor.util.ParameterValidator;
+import org.apache.commons.lang.StringUtils;
 import org.glassfish.jersey.server.mvc.Template;
 
 /**
@@ -106,14 +109,14 @@ public class WebViews {
   @GET
   @Path("tservers")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getTabletServers(@QueryParam("s") String server) {
+  public Map<String,Object> getTabletServers(@QueryParam("s") String server) throws UnsupportedEncodingException {
 
     Map<String,Object> model = getModel();
     model.put("title", "Tablet Server Status");
-    if (server != null) {
+    if (StringUtils.isNotBlank(server)) {
       model.put("template", "server.ftl");
       model.put("js", "server.js");
-      model.put("server", server);
+      model.put("server", ParameterValidator.sanitizeParameter(server));
       return model;
     }
     model.put("template", "tservers.ftl");
@@ -192,16 +195,21 @@ public class WebViews {
   @Path("vis")
   @Template(name = "/default.ftl")
   public Map<String,Object> getServerActivity(@QueryParam("shape") @DefaultValue("circles") String shape, @QueryParam("size") @DefaultValue("40") String size,
-      @QueryParam("motion") @DefaultValue("") String motion, @QueryParam("color") @DefaultValue("allavg") String color) {
+      @QueryParam("motion") @DefaultValue("") String motion, @QueryParam("color") @DefaultValue("allavg") String color) throws UnsupportedEncodingException {
 
+    shape = ParameterValidator.sanitizeParameter(shape, "circles");
+    size = ParameterValidator.validatePositiveInteger(size, "40");
+    motion = ParameterValidator.sanitizeParameter(motion);
+    color = ParameterValidator.sanitizeParameter(color, "allavg");
+    
     Map<String,Object> model = getModel();
     model.put("title", "Server Activity");
     model.put("template", "vis.ftl");
 
     model.put("shape", shape);
     model.put("size", size);
-    model.put("motion", motion);
-    model.put("color", color);
+    model.put("motion", StringUtils.isBlank(motion) ? "" : motion.trim());
+    model.put("color", StringUtils.isBlank(color) ? "allavg" : color); // Are there a set of acceptable values?
 
     return model;
   }
@@ -235,8 +243,14 @@ public class WebViews {
   @GET
   @Path("tables/{tableID}")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getTables(@PathParam("tableID") String tableID) throws TableNotFoundException {
+  public Map<String,Object> getTables(@PathParam("tableID") String tableID) throws TableNotFoundException, UnsupportedEncodingException {
 
+    if (StringUtils.isBlank(tableID)) {
+      throw new TableNotFoundException("EMPTY tableId", null, null); // underly error thrown if table not found.
+    }
+
+    tableID = ParameterValidator.sanitizeParameter(tableID);
+    
     String tableName = Tables.getTableName(Monitor.getContext().getInstance(), new Table.ID(tableID));
 
     Map<String,Object> model = getModel();
@@ -262,6 +276,8 @@ public class WebViews {
   @Template(name = "/default.ftl")
   public Map<String,Object> getTracesSummary(@QueryParam("minutes") @DefaultValue("10") String minutes) {
 
+    minutes = ParameterValidator.validatePositiveInteger(minutes, "10");
+    
     Map<String,Object> model = getModel();
     model.put("title", "Traces for the last&nbsp;" + minutes + "&nbsp;minute(s)");
 
@@ -286,6 +302,8 @@ public class WebViews {
   @Template(name = "/default.ftl")
   public Map<String,Object> getTracesForType(@QueryParam("type") String type, @QueryParam("minutes") @DefaultValue("10") String minutes) {
 
+    minutes = ParameterValidator.validatePositiveInteger(minutes, "10");
+    
     Map<String,Object> model = getModel();
     model.put("title", "Traces for " + type + " for the last " + minutes + " minute(s)");
 
@@ -307,8 +325,13 @@ public class WebViews {
   @GET
   @Path("trace/show")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getTraceShow(@QueryParam("id") String id) {
+  public Map<String,Object> getTraceShow(@QueryParam("id") String id) throws Exception {
 
+    id = ParameterValidator.sanitizeParameter(id);
+    if (StringUtils.isEmpty(id)) {
+      throw new Exception("Specified id was blank");
+    }
+    
     Map<String,Object> model = getModel();
     model.put("title", "Trace ID " + id);
 
@@ -348,7 +371,7 @@ public class WebViews {
   @GET
   @Path("problems")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getProblems(@QueryParam("table") String table) {
+  public Map<String,Object> getProblems(@QueryParam("table") String table) throws UnsupportedEncodingException {
 
     Map<String,Object> model = getModel();
     model.put("title", "Per-Table Problem Report");
@@ -356,7 +379,8 @@ public class WebViews {
     model.put("template", "problems.ftl");
     model.put("js", "problems.js");
 
-    if (table != null) {
+    table = ParameterValidator.sanitizeParameter(table);
+    if (StringUtils.isNotBlank(table)) {
       model.put("table", table);
     }
 
