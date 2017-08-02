@@ -16,10 +16,19 @@
  */
 package org.apache.accumulo.monitor.view;
 
+import static org.apache.accumulo.monitor.util.ParameterValidator.ALPHA_NUM_REGEX;
+import static org.apache.accumulo.monitor.util.ParameterValidator.ALPHA_NUM_REGEX_BLANK_OK;
+import static org.apache.accumulo.monitor.util.ParameterValidator.SERVER_REGEX_BLANK_OK;
+
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -34,6 +43,7 @@ import org.apache.accumulo.core.client.impl.Table;
 import org.apache.accumulo.core.client.impl.Tables;
 import org.apache.accumulo.core.util.AddressUtil;
 import org.apache.accumulo.monitor.Monitor;
+import org.apache.commons.lang.StringUtils;
 import org.glassfish.jersey.server.mvc.Template;
 
 /**
@@ -106,11 +116,11 @@ public class WebViews {
   @GET
   @Path("tservers")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getTabletServers(@QueryParam("s") String server) {
+  public Map<String,Object> getTabletServers(@QueryParam("s") @Pattern(regexp = SERVER_REGEX_BLANK_OK) String server) {
 
     Map<String,Object> model = getModel();
     model.put("title", "Tablet Server Status");
-    if (server != null) {
+    if (StringUtils.isNotBlank(server)) {
       model.put("template", "server.ftl");
       model.put("js", "server.js");
       model.put("server", server);
@@ -191,17 +201,22 @@ public class WebViews {
   @GET
   @Path("vis")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getServerActivity(@QueryParam("shape") @DefaultValue("circles") String shape, @QueryParam("size") @DefaultValue("40") String size,
-      @QueryParam("motion") @DefaultValue("") String motion, @QueryParam("color") @DefaultValue("allavg") String color) {
+  public Map<String,Object> getServerActivity(@QueryParam("shape") @DefaultValue("circles") @Pattern(regexp = ALPHA_NUM_REGEX_BLANK_OK) String shape,
+      @QueryParam("size") @DefaultValue("40") @Min(1) @Max(100) int size,
+      @QueryParam("motion") @DefaultValue("") @Pattern(regexp = ALPHA_NUM_REGEX_BLANK_OK) String motion, @QueryParam("color") @DefaultValue("allavg") @Pattern(
+          regexp = ALPHA_NUM_REGEX_BLANK_OK) String color) {
+
+    shape = StringUtils.isNotBlank(shape) ? shape : "circles";
+    color = StringUtils.isNotBlank(color) ? color : "allavg";
 
     Map<String,Object> model = getModel();
     model.put("title", "Server Activity");
     model.put("template", "vis.ftl");
 
     model.put("shape", shape);
-    model.put("size", size);
-    model.put("motion", motion);
-    model.put("color", color);
+    model.put("size", String.valueOf(size));
+    model.put("motion", StringUtils.isBlank(motion) ? "" : motion.trim());
+    model.put("color", StringUtils.isBlank(color) ? "allavg" : color); // Are there a set of acceptable values?
 
     return model;
   }
@@ -235,7 +250,8 @@ public class WebViews {
   @GET
   @Path("tables/{tableID}")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getTables(@PathParam("tableID") String tableID) throws TableNotFoundException {
+  public Map<String,Object> getTables(@PathParam("tableID") @NotNull @Pattern(regexp = ALPHA_NUM_REGEX) String tableID) throws TableNotFoundException,
+      UnsupportedEncodingException {
 
     String tableName = Tables.getTableName(Monitor.getContext().getInstance(), Table.ID.of(tableID));
 
@@ -254,20 +270,19 @@ public class WebViews {
    * Returns trace summary template
    *
    * @param minutes
-   *          Range of minutes
+   *          Range of minutes, default 10 minutes Min of 0 Max of 30 days in minutes
    * @return Trace summary model
    */
   @GET
   @Path("trace/summary")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getTracesSummary(@QueryParam("minutes") @DefaultValue("10") String minutes) {
-
+  public Map<String,Object> getTracesSummary(@QueryParam("minutes") @DefaultValue("10") @Min(0) @Max(2592000) int minutes) {
     Map<String,Object> model = getModel();
-    model.put("title", "Traces for the last&nbsp;" + minutes + "&nbsp;minute(s)");
+    model.put("title", "Traces for the last&nbsp;" + String.valueOf(minutes) + "&nbsp;minute(s)");
 
     model.put("template", "summary.ftl");
     model.put("js", "summary.js");
-    model.put("minutes", minutes);
+    model.put("minutes", String.valueOf(minutes));
 
     return model;
   }
@@ -278,21 +293,21 @@ public class WebViews {
    * @param type
    *          Type of trace
    * @param minutes
-   *          Range of minutes
+   *          Range of minutes, default 10 minutes Min of 0 Max of 30 days in minutes
    * @return Traces by type model
    */
   @GET
   @Path("trace/listType")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getTracesForType(@QueryParam("type") String type, @QueryParam("minutes") @DefaultValue("10") String minutes) {
-
+  public Map<String,Object> getTracesForType(@QueryParam("type") @NotNull @Pattern(regexp = ALPHA_NUM_REGEX) String type,
+      @QueryParam("minutes") @DefaultValue("10") @Min(0) @Max(2592000) int minutes) {
     Map<String,Object> model = getModel();
-    model.put("title", "Traces for " + type + " for the last " + minutes + " minute(s)");
+    model.put("title", "Traces for " + type + " for the last " + String.valueOf(minutes) + " minute(s)");
 
     model.put("template", "listType.ftl");
     model.put("js", "listType.js");
     model.put("type", type);
-    model.put("minutes", minutes);
+    model.put("minutes", String.valueOf(minutes));
 
     return model;
   }
@@ -307,7 +322,7 @@ public class WebViews {
   @GET
   @Path("trace/show")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getTraceShow(@QueryParam("id") String id) {
+  public Map<String,Object> getTraceShow(@QueryParam("id") @NotNull @Pattern(regexp = ALPHA_NUM_REGEX) String id) throws Exception {
 
     Map<String,Object> model = getModel();
     model.put("title", "Trace ID " + id);
@@ -348,7 +363,7 @@ public class WebViews {
   @GET
   @Path("problems")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getProblems(@QueryParam("table") String table) {
+  public Map<String,Object> getProblems(@QueryParam("table") @Pattern(regexp = ALPHA_NUM_REGEX_BLANK_OK) String table) {
 
     Map<String,Object> model = getModel();
     model.put("title", "Per-Table Problem Report");
@@ -356,7 +371,7 @@ public class WebViews {
     model.put("template", "problems.ftl");
     model.put("js", "problems.js");
 
-    if (table != null) {
+    if (StringUtils.isNotBlank(table)) {
       model.put("table", table);
     }
 
