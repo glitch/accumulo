@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -194,20 +196,20 @@ public class WebViews {
   @GET
   @Path("vis")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getServerActivity(@QueryParam("shape") @DefaultValue("circles") String shape, @QueryParam("size") @DefaultValue("40") String size,
-      @QueryParam("motion") @DefaultValue("") String motion, @QueryParam("color") @DefaultValue("allavg") String color) throws UnsupportedEncodingException {
+  public Map<String,Object> getServerActivity(@QueryParam("shape") @DefaultValue("circles") String shape,
+      @QueryParam("size") @DefaultValue("40") @Min(1) @Max(100) int size, @QueryParam("motion") @DefaultValue("") String motion,
+      @QueryParam("color") @DefaultValue("allavg") String color) throws UnsupportedEncodingException {
 
     shape = ParameterValidator.sanitizeParameter(shape, "circles");
-    size = ParameterValidator.validatePositiveInteger(size, "40");
     motion = ParameterValidator.sanitizeParameter(motion);
     color = ParameterValidator.sanitizeParameter(color, "allavg");
-    
+
     Map<String,Object> model = getModel();
     model.put("title", "Server Activity");
     model.put("template", "vis.ftl");
 
     model.put("shape", shape);
-    model.put("size", size);
+    model.put("size", String.valueOf(size));
     model.put("motion", StringUtils.isBlank(motion) ? "" : motion.trim());
     model.put("color", StringUtils.isBlank(color) ? "allavg" : color); // Are there a set of acceptable values?
 
@@ -250,7 +252,7 @@ public class WebViews {
     }
 
     tableID = ParameterValidator.sanitizeParameter(tableID);
-    
+
     String tableName = Tables.getTableName(Monitor.getContext().getInstance(), new Table.ID(tableID));
 
     Map<String,Object> model = getModel();
@@ -268,22 +270,19 @@ public class WebViews {
    * Returns trace summary template
    *
    * @param minutes
-   *          Range of minutes
+   *          Range of minutes, default 10 minutes Min of 0 Max of 30 days in minutes
    * @return Trace summary model
    */
   @GET
   @Path("trace/summary")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getTracesSummary(@QueryParam("minutes") @DefaultValue("10") String minutes) {
-
-    minutes = ParameterValidator.validatePositiveInteger(minutes, "10");
-    
+  public Map<String,Object> getTracesSummary(@QueryParam("minutes") @DefaultValue("10") @Min(0) @Max(2592000) int minutes) {
     Map<String,Object> model = getModel();
-    model.put("title", "Traces for the last&nbsp;" + minutes + "&nbsp;minute(s)");
+    model.put("title", "Traces for the last&nbsp;" + String.valueOf(minutes) + "&nbsp;minute(s)");
 
     model.put("template", "summary.ftl");
     model.put("js", "summary.js");
-    model.put("minutes", minutes);
+    model.put("minutes", String.valueOf(minutes));
 
     return model;
   }
@@ -294,23 +293,20 @@ public class WebViews {
    * @param type
    *          Type of trace
    * @param minutes
-   *          Range of minutes
+   *          Range of minutes, default 10 minutes Min of 0 Max of 30 days in minutes
    * @return Traces by type model
    */
   @GET
   @Path("trace/listType")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getTracesForType(@QueryParam("type") String type, @QueryParam("minutes") @DefaultValue("10") String minutes) {
-
-    minutes = ParameterValidator.validatePositiveInteger(minutes, "10");
-    
+  public Map<String,Object> getTracesForType(@QueryParam("type") String type, @QueryParam("minutes") @DefaultValue("10") @Min(0) @Max(2592000) int minutes) {
     Map<String,Object> model = getModel();
-    model.put("title", "Traces for " + type + " for the last " + minutes + " minute(s)");
+    model.put("title", "Traces for " + type + " for the last " + String.valueOf(minutes) + " minute(s)");
 
     model.put("template", "listType.ftl");
     model.put("js", "listType.js");
     model.put("type", type);
-    model.put("minutes", minutes);
+    model.put("minutes", String.valueOf(minutes));
 
     return model;
   }
@@ -331,7 +327,7 @@ public class WebViews {
     if (StringUtils.isEmpty(id)) {
       throw new Exception("Specified id was blank");
     }
-    
+
     Map<String,Object> model = getModel();
     model.put("title", "Trace ID " + id);
 

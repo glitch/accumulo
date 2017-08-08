@@ -28,6 +28,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -79,17 +81,13 @@ public class TracesResource {
    * Generates a trace summary
    *
    * @param minutes
-   *          Range of minutes to filter traces
+   *          Range of minutes to filter traces Min of 0 minutes, Max of 30 days
    * @return Trace summary in specified range
    */
   @Path("summary/{minutes}")
   @GET
-  public RecentTracesList getTraces(@DefaultValue("10") @PathParam("minutes") int minutes) throws Exception {
+  public RecentTracesList getTraces(@DefaultValue("10") @PathParam("minutes") @Min(0) @Max(2592000) int minutes) throws Exception {
 
-    if (minutes >= 60 || minutes <= 0) {
-      minutes = 10; // use default
-    }
-    
     RecentTracesList recentTraces = new RecentTracesList();
 
     Pair<Scanner,UserGroupInformation> pair = getScanner();
@@ -128,24 +126,19 @@ public class TracesResource {
    * @param typeParameter
    *          Type of the trace
    * @param minutes
-   *          Range of minutes
+   *          Range of minutes, Min of 0 and Max 0f 30 days
    * @return List of traces filtered by type and range
    */
   @Path("listType/{type}/{minutes}")
   @GET
-  public TraceType getTracesType(@PathParam("type") String typeParameter, @PathParam("minutes") int minutes) throws Exception {
-
-    if (StringUtils.isEmpty(typeParameter)) {
-      throw new Exception("Specified type was empty");
-    }
+  public TraceType getTracesType(@PathParam("type") String typeParameter, @PathParam("minutes") @Min(0) @Max(2592000) int minutes) throws Exception {
 
     // Need finalized value for use in anonymous function below.
     final String type = ParameterValidator.sanitizeParameter(typeParameter);
-    
-    if (minutes >= 60 || minutes < 0) {
-      throw new Exception("minutes was not of range [0-59], was " + String.valueOf(minutes));
+    if (StringUtils.isEmpty(type)) {
+      throw new Exception("Specified type was empty or could not determnine type");
     }
-    
+
     TraceType typeTraces = new TraceType(type);
 
     Pair<Scanner,UserGroupInformation> pair = getScanner();
@@ -194,11 +187,10 @@ public class TracesResource {
   @GET
   public TraceList getTracesType(@PathParam("id") String id) throws Exception {
 
+    id = ParameterValidator.sanitizeParameter(id);
     if (StringUtils.isEmpty(id)) {
       return null;
     }
-
-    id = ParameterValidator.sanitizeParameter(id);
 
     TraceList traces = new TraceList(id);
 

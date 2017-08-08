@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.GET;
@@ -68,6 +69,7 @@ import org.apache.hadoop.io.Text;
 public class TablesResource {
 
   private static final TabletServerStatus NO_STATUS = new TabletServerStatus();
+  private static final Pattern COMMA = Pattern.compile("(,|%2[cC])");
 
   /**
    * Generates a table list based on the namespace
@@ -91,7 +93,6 @@ public class TablesResource {
         }
       }
     }
-
 
     return generateTables(tableNamespace);
   }
@@ -182,15 +183,14 @@ public class TablesResource {
   @GET
   @Path("namespaces/{namespaces}")
   public TablesList getTableWithNamespace(@PathParam("namespaces") String namespaceList) throws UnsupportedEncodingException {
-    namespaceList = ParameterValidator.sanitizeParameter(namespaceList);
-     TODO replace encoded comma value if it is infact encoded; that or user better regex below
+    namespaceList = ParameterValidator.sanitizeParameter(namespaceList); // COMMA regex catches both raw and encoded
     SortedMap<String,Namespace.ID> namespaces = Namespaces.getNameToIdMap(Monitor.getContext().getInstance());
 
     TablesList tableNamespace = new TablesList();
     /*
      * Add the tables that have the selected namespace Asterisk = All namespaces Hyphen = Default namespace
      */
-    for (String namespace : namespaceList.split(",")) {
+    for (String namespace : COMMA.split(namespaceList)) {
       for (String key : namespaces.keySet()) {
         if (namespace.equals("*") || namespace.equals(key) || (key.isEmpty() && namespace.equals("-"))) {
           tableNamespace.addTable(new TableNamespace(key));
@@ -220,7 +220,7 @@ public class TablesResource {
     if (StringUtils.isBlank(tableIdStr)) {
       return tabletServers;
     }
-    
+
     TreeSet<String> locs = new TreeSet<>();
     if (RootTable.ID.equals(tableId)) {
       locs.add(instance.getRootTabletLocation());

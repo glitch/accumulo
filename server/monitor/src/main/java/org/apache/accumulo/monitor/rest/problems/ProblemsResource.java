@@ -16,7 +16,6 @@
  */
 package org.apache.accumulo.monitor.rest.problems;
 
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
@@ -157,11 +156,11 @@ public class ProblemsResource {
       tableID = ParameterValidator.sanitizeParameter(tableID);
       resource = ParameterValidator.sanitizeParameter(resource);
       ptype = ParameterValidator.sanitizeParameter(ptype);
-      
+
       if (StringUtils.isEmpty(tableID) || StringUtils.isEmpty(resource) || StringUtils.isEmpty(ptype)) {
-        throw new Exception("One or more Query Parameters was blank");
+        throw new Exception("One or more Query Parameters was incorrect");
       }
-      
+
       ProblemReports.getInstance(Monitor.getContext()).deleteProblemReport(new Table.ID(tableID), ProblemType.valueOf(ptype), resource);
     } catch (Exception e) {
       log.error("Failed to delete problem reports for table " + (StringUtils.isBlank(tableID) ? "" : tableID), e);
