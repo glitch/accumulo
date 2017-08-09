@@ -18,6 +18,7 @@ package org.apache.accumulo.monitor.rest.trace;
 
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.accumulo.monitor.util.ParameterValidator.ALPHA_NUM_REGEX;
 
 import java.io.IOException;
 import java.security.PrivilegedAction;
@@ -30,6 +31,8 @@ import java.util.TreeMap;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -53,7 +56,6 @@ import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.util.Pair;
 import org.apache.accumulo.monitor.Monitor;
-import org.apache.accumulo.monitor.util.ParameterValidator;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.security.SecurityUtil;
 import org.apache.accumulo.tracer.SpanTree;
@@ -86,7 +88,7 @@ public class TracesResource {
    */
   @Path("summary/{minutes}")
   @GET
-  public RecentTracesList getTraces(@DefaultValue("10") @PathParam("minutes") @Min(0) @Max(2592000) int minutes) throws Exception {
+  public RecentTracesList getTraces(@DefaultValue("10") @PathParam("minutes") @NotNull @Min(0) @Max(2592000) int minutes) throws Exception {
 
     RecentTracesList recentTraces = new RecentTracesList();
 
@@ -123,7 +125,7 @@ public class TracesResource {
   /**
    * Generates a list of traces filtered by type and range of minutes
    *
-   * @param typeParameter
+   * @param type
    *          Type of the trace
    * @param minutes
    *          Range of minutes, Min of 0 and Max 0f 30 days
@@ -131,13 +133,8 @@ public class TracesResource {
    */
   @Path("listType/{type}/{minutes}")
   @GET
-  public TraceType getTracesType(@PathParam("type") String typeParameter, @PathParam("minutes") @Min(0) @Max(2592000) int minutes) throws Exception {
-
-    // Need finalized value for use in anonymous function below.
-    final String type = ParameterValidator.sanitizeParameter(typeParameter);
-    if (StringUtils.isEmpty(type)) {
-      throw new Exception("Specified type was empty or could not determnine type");
-    }
+  public TraceType getTracesType(@PathParam("type") @NotNull @Pattern(regexp = ALPHA_NUM_REGEX) final String type, 
+                                 @PathParam("minutes") @Min(0) @Max(2592000) int minutes) throws Exception {
 
     TraceType typeTraces = new TraceType(type);
 
@@ -185,12 +182,7 @@ public class TracesResource {
    */
   @Path("show/{id}")
   @GET
-  public TraceList getTracesType(@PathParam("id") String id) throws Exception {
-
-    id = ParameterValidator.sanitizeParameter(id);
-    if (StringUtils.isEmpty(id)) {
-      return null;
-    }
+  public TraceList getTracesType(@PathParam("id") @NotNull @Pattern(regexp = ALPHA_NUM_REGEX) String id) throws Exception {
 
     TraceList traces = new TraceList(id);
 

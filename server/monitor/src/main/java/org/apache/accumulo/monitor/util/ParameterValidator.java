@@ -16,33 +16,19 @@
  */
 package org.apache.accumulo.monitor.util;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-
-import org.apache.commons.lang.StringUtils;
-
 /**
  * Simple utility class to validate Accumulo Monitor Query and Path parameters
  */
-public class ParameterValidator {
+public interface ParameterValidator {
 
-  /**
-   * @param s
-   *          String parameter to sanitize. Common usages are tableId, type, tserverAddress
-   * @return URLEncoder encoded version of the passed in String parameter
-   * @throws UnsupportedEncodingException
-   *           if the string cannot be encoded to UTF-8
-   */
-  public static String sanitizeParameter(String s) throws UnsupportedEncodingException {
-    return StringUtils.isEmpty(s) ? StringUtils.EMPTY : URLEncoder.encode(s, "UTF-8").trim();
-  }
-
-  public static String sanitizeParameter(String s, String defaultValue) throws UnsupportedEncodingException {
-    try {
-      String sanitized = sanitizeParameter(s);
-      return StringUtils.EMPTY.equals(sanitized) ? defaultValue : sanitized;
-    } catch (UnsupportedEncodingException e) {
-      return defaultValue;
-    }
-  }
+  String ALPHA_NUM_REGEX = "\\w+";
+  String ALPHA_NUM_REGEX_BLANK_OK = "\\w*";
+  
+  String RESOURCE_REGEX = "(\\w|:)+";
+  
+  String NAMESPACE_REGEX = "[*-]?|(\\w)+";
+  String NAMESPACE_LIST_REGEX = "[*-]?|(\\w+,?\\w*)+";
+  
+  String SERVER_REGEX = "(\\w+(\\.)*\\w*)+";
+  String SERVER_REGEX_BLANK_OK = "(\\w+(\\.)*\\w*)*";
 }

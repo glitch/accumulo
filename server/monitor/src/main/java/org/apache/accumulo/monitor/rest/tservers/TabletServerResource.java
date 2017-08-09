@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -51,13 +53,13 @@ import org.apache.accumulo.core.util.AddressUtil;
 import org.apache.accumulo.core.zookeeper.ZooUtil;
 import org.apache.accumulo.monitor.Monitor;
 import org.apache.accumulo.monitor.rest.master.MasterResource;
-import org.apache.accumulo.monitor.util.ParameterValidator;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.master.state.DeadServerList;
 import org.apache.accumulo.server.util.ActionStatsUpdator;
-import org.apache.commons.lang.StringUtils;
 
 import com.google.common.net.HostAndPort;
+
+import static org.apache.accumulo.monitor.util.ParameterValidator.SERVER_REGEX;
 
 /**
  *
@@ -104,12 +106,9 @@ public class TabletServerResource {
    */
   @POST
   @Consumes(MediaType.TEXT_PLAIN)
-  public void clearDeadServer(@QueryParam("server") String server) throws Exception {
-    server = ParameterValidator.sanitizeParameter(server);
-    if (StringUtils.isNotBlank(server)) {
-      DeadServerList obit = new DeadServerList(ZooUtil.getRoot(Monitor.getContext().getInstance()) + Constants.ZDEADTSERVERS);
-      obit.delete(server);
-    }
+  public void clearDeadServer(@QueryParam("server") @NotNull @Pattern(regexp = SERVER_REGEX) String server) throws Exception {
+    DeadServerList obit = new DeadServerList(ZooUtil.getRoot(Monitor.getContext().getInstance()) + Constants.ZDEADTSERVERS);
+    obit.delete(server);
   }
 
   /**
@@ -152,11 +151,7 @@ public class TabletServerResource {
    */
   @Path("{address}")
   @GET
-  public TabletServerSummary getTserverDetails(@PathParam("address") String tserverAddress) throws Exception {
-    tserverAddress = ParameterValidator.sanitizeParameter(tserverAddress);
-    if (StringUtils.isEmpty(tserverAddress)) {
-      return null;
-    }
+  public TabletServerSummary getTserverDetails(@PathParam("address") @NotNull @Pattern(regexp = SERVER_REGEX) String tserverAddress) throws Exception {
 
     boolean tserverExists = false;
     for (TabletServerStatus ts : Monitor.getMmi().getTServerInfo()) {

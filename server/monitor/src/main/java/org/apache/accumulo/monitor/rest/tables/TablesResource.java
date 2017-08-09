@@ -25,9 +25,10 @@ import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -48,7 +49,6 @@ import org.apache.accumulo.core.metadata.RootTable;
 import org.apache.accumulo.monitor.Monitor;
 import org.apache.accumulo.monitor.rest.tservers.TabletServer;
 import org.apache.accumulo.monitor.rest.tservers.TabletServers;
-import org.apache.accumulo.monitor.util.ParameterValidator;
 import org.apache.accumulo.server.client.HdfsZooInstance;
 import org.apache.accumulo.server.master.state.MetaDataTableScanner;
 import org.apache.accumulo.server.master.state.TabletLocationState;
@@ -56,6 +56,10 @@ import org.apache.accumulo.server.tables.TableManager;
 import org.apache.accumulo.server.util.TableInfoUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.Text;
+
+import static org.apache.accumulo.monitor.util.ParameterValidator.ALPHA_NUM_REGEX;
+import static org.apache.accumulo.monitor.util.ParameterValidator.NAMESPACE_LIST_REGEX;
+import static org.apache.accumulo.monitor.util.ParameterValidator.NAMESPACE_REGEX;
 
 /**
  *
@@ -69,7 +73,7 @@ import org.apache.hadoop.io.Text;
 public class TablesResource {
 
   private static final TabletServerStatus NO_STATUS = new TabletServerStatus();
-  private static final Pattern COMMA = Pattern.compile("(,|%2[cC])");
+  private static final java.util.regex.Pattern COMMA = java.util.regex.Pattern.compile(",");
 
   /**
    * Generates a table list based on the namespace
@@ -168,8 +172,7 @@ public class TablesResource {
    */
   @GET
   @Path("namespace/{namespace}")
-  public TablesList getTable(@PathParam("namespace") String namespace) throws UnsupportedEncodingException {
-    namespace = ParameterValidator.sanitizeParameter(namespace);
+  public TablesList getTable(@PathParam("namespace") @NotNull @Pattern(regexp = NAMESPACE_REGEX) String namespace) throws UnsupportedEncodingException {
     return generateTables(namespace);
   }
 
@@ -182,8 +185,7 @@ public class TablesResource {
    */
   @GET
   @Path("namespaces/{namespaces}")
-  public TablesList getTableWithNamespace(@PathParam("namespaces") String namespaceList) throws UnsupportedEncodingException {
-    namespaceList = ParameterValidator.sanitizeParameter(namespaceList); // COMMA regex catches both raw and encoded
+  public TablesList getTableWithNamespace(@PathParam("namespaces") @NotNull @Pattern(regexp = NAMESPACE_LIST_REGEX) String namespaceList) throws UnsupportedEncodingException {
     SortedMap<String,Namespace.ID> namespaces = Namespaces.getNameToIdMap(Monitor.getContext().getInstance());
 
     TablesList tableNamespace = new TablesList();
@@ -210,8 +212,7 @@ public class TablesResource {
    */
   @Path("{tableId}")
   @GET
-  public TabletServers getParticipatingTabletServers(@PathParam("tableId") String tableIdStr) throws Exception {
-    tableIdStr = ParameterValidator.sanitizeParameter(tableIdStr);
+  public TabletServers getParticipatingTabletServers(@PathParam("tableId") @NotNull @Pattern(regexp = ALPHA_NUM_REGEX) String tableIdStr) throws Exception {
     Instance instance = Monitor.getContext().getInstance();
     Table.ID tableId = new Table.ID(tableIdStr);
 

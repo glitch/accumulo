@@ -19,32 +19,36 @@ package org.apache.accumulo.monitor.util;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.regex.Pattern;
+
 /**
  * Basic tests for ParameterValidator
  */
 public class ParameterValidatorTest {
 
   @Test
-  public void sanitizeParameterTest() throws Exception {
-    String foo = "abcd.1234";
-    Assert.assertEquals(ParameterValidator.sanitizeParameter(foo), foo);
-
-    foo = "abcd.123.server-foo.com";
-    Assert.assertEquals(ParameterValidator.sanitizeParameter(foo), foo);
+  public void testAlphaNumRegex() {
+    Pattern p = Pattern.compile(ParameterValidator.ALPHA_NUM_REGEX);
+    Assert.assertTrue(p.matcher("asdlkfj234kj324").matches());
+    Assert.assertFalse(p.matcher("234-324").matches());
+    Assert.assertFalse(p.matcher("").matches());
+    
+    p = Pattern.compile(ParameterValidator.ALPHA_NUM_REGEX_BLANK_OK);
+    Assert.assertTrue(p.matcher("asdlkfj234kj324").matches());
+    Assert.assertTrue(p.matcher("").matches());
+    Assert.assertFalse(p.matcher("234-324").matches());
+  }
+  
+  @Test
+  public void testServerRegex() throws Exception {
+    Pattern p = Pattern.compile(ParameterValidator.SERVER_REGEX);
+    Assert.assertTrue(p.matcher("ab3cd.12d34.3xyz.net").matches());
+    Assert.assertTrue(p.matcher("abcd.123.server-foo.com").matches());
+    
+    Assert.assertFalse(p.matcher("abcd.1234.*.xyz").matches());
 
     // TODO would you ever have a port number in tserverAddress?
     // abc-xyz.server:1234 or 192.168.1.1:9999
-
-    // test what happens with csv values
-    // abc,def,xyz
-    foo = "abc,def,xyz";
-    Assert.assertEquals(ParameterValidator.sanitizeParameter(foo), "abc%2Cdef%2Cxyz");
   }
-
-  @Test
-  public void sanitizeParameterWithDefaultValueTest() throws Exception {
-    Assert.assertEquals(ParameterValidator.sanitizeParameter("", "default"), "default");
-    Assert.assertEquals(ParameterValidator.sanitizeParameter(null, "default"), "default");
-  }
-
+  
 }
