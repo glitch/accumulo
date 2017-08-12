@@ -32,9 +32,18 @@ import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.MessageBodyWriter;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.util.HashMap;
 
 import static org.easymock.EasyMock.expect;
 import static org.powermock.api.easymock.PowerMock.mockStatic;
@@ -52,14 +61,14 @@ public class WebViewsTest extends JerseyTest {
         enable(TestProperties.LOG_TRAFFIC);
         enable(TestProperties.DUMP_ENTITY);
         ResourceConfig config = new ResourceConfig(WebViews.class);
-        config.register(MediaType.TEXT_HTML);
-        return new ResourceConfig(WebViews.class);
+        config.register(org.apache.accumulo.monitor.view.WebViewsTest.HashMapWriter.class);
+        return config;
     }
 
     @Override
     protected void configureClient(ClientConfig config) {
         super.configureClient(config);
-        config.register()
+        config.register(org.apache.accumulo.monitor.view.WebViewsTest.HashMapWriter.class);
     }
 
     /**
@@ -73,10 +82,11 @@ public class WebViewsTest extends JerseyTest {
     }
 
     /**
-     * Here we expect the constraints to pass, but underlying logic will be executed.  We mock a certain amount of the
-     * parts as an example of how one can trace through the code; however it's difficult to mock the jersey MVC code
-     * to get the proper MessageBodyWriter for the returned Model object.  Here we expect a 500 response code which
-     * at least illustrates we made it past the constraints on the endpoint.
+     * Test path tables/{tableID} which passes constraints.  
+     * On passing constraints underlying logic will be executed so we need to mock
+     * a certain amount of it.  Note: to get the proper response code back, you need to make sure jersey has a
+     * registered MessageBodyWriter capable of serializing/writing the object returned from your endpoint.  We're using
+     * a simple stubbed out inner class HashMapWriter for this.
      * 
      * @throws Exception not expected
      */
@@ -97,9 +107,11 @@ public class WebViewsTest extends JerseyTest {
         
         // Using the mocks we can verify that the getModel method gets called via debugger
         // however it's difficult to continue to mock through the jersey MVC code for the properly built response.
-        // Expect a 500 response code for this.
+        // Our silly HashMapWriter registered in the configure method gets wired in and used here.
         Response output = target("tables/foo").request().get();
-        Assert.assertEquals("should return status 500", 500, output.getStatus());
+        Assert.assertEquals("should return status 200", 200, output.getStatus());
+        String responseBody = output.readEntity(String.class);
+        Assert.assertTrue(responseBody.contains("tableID=foo") && responseBody.contains("table=bar"));
     }
 
     /**
@@ -114,5 +126,26 @@ public class WebViewsTest extends JerseyTest {
         // Test lower bounds of constraint
         output = target("trace/summary").queryParam("minutes", -27).request().get();
         Assert.assertEquals("should return status 400", 400, output.getStatus());
+    }
+
+    /**
+     * Silly stub to handle MessageBodyWriter for Hashmap.  Registered in configure method and auto-wired by Jersey.
+     */
+    public static class HashMapWriter implements MessageBodyWriter<HashMap> {
+        @Override
+        public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+            return true;
+        }
+
+        @Override
+        public long getSize(HashMap hashMap, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+            return 0;
+        }
+
+        @Override
+        public void writeTo(HashMap hashMap, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+            String s = hashMap.toString();
+            entityStream.write(s.getBytes());
+        }
     }
 }
