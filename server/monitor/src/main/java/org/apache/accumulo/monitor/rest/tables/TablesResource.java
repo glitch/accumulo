@@ -16,6 +16,10 @@
  */
 package org.apache.accumulo.monitor.rest.tables;
 
+import static org.apache.accumulo.monitor.util.ParameterValidator.ALPHA_NUM_REGEX;
+import static org.apache.accumulo.monitor.util.ParameterValidator.NAMESPACE_LIST_REGEX;
+import static org.apache.accumulo.monitor.util.ParameterValidator.NAMESPACE_REGEX;
+
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,10 +60,6 @@ import org.apache.accumulo.server.tables.TableManager;
 import org.apache.accumulo.server.util.TableInfoUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.Text;
-
-import static org.apache.accumulo.monitor.util.ParameterValidator.ALPHA_NUM_REGEX;
-import static org.apache.accumulo.monitor.util.ParameterValidator.NAMESPACE_LIST_REGEX;
-import static org.apache.accumulo.monitor.util.ParameterValidator.NAMESPACE_REGEX;
 
 /**
  *
@@ -185,7 +185,8 @@ public class TablesResource {
    */
   @GET
   @Path("namespaces/{namespaces}")
-  public TablesList getTableWithNamespace(@PathParam("namespaces") @NotNull @Pattern(regexp = NAMESPACE_LIST_REGEX) String namespaceList) throws UnsupportedEncodingException {
+  public TablesList getTableWithNamespace(@PathParam("namespaces") @NotNull @Pattern(regexp = NAMESPACE_LIST_REGEX) String namespaceList)
+      throws UnsupportedEncodingException {
     SortedMap<String,Namespace.ID> namespaces = Namespaces.getNameToIdMap(Monitor.getContext().getInstance());
 
     TablesList tableNamespace = new TablesList();

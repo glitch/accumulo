@@ -16,6 +16,8 @@
  */
 package org.apache.accumulo.monitor.rest.tservers;
 
+import static org.apache.accumulo.monitor.util.ParameterValidator.SERVER_REGEX;
+
 import java.lang.management.ManagementFactory;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -58,8 +60,6 @@ import org.apache.accumulo.server.master.state.DeadServerList;
 import org.apache.accumulo.server.util.ActionStatsUpdator;
 
 import com.google.common.net.HostAndPort;
-
-import static org.apache.accumulo.monitor.util.ParameterValidator.SERVER_REGEX;
 
 /**
  *

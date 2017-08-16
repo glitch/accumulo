@@ -133,8 +133,8 @@ public class TracesResource {
    */
   @Path("listType/{type}/{minutes}")
   @GET
-  public TraceType getTracesType(@PathParam("type") @NotNull @Pattern(regexp = ALPHA_NUM_REGEX) final String type, 
-                                 @PathParam("minutes") @Min(0) @Max(2592000) int minutes) throws Exception {
+  public TraceType getTracesType(@PathParam("type") @NotNull @Pattern(regexp = ALPHA_NUM_REGEX) final String type,
+      @PathParam("minutes") @Min(0) @Max(2592000) int minutes) throws Exception {
 
     TraceType typeTraces = new TraceType(type);
 

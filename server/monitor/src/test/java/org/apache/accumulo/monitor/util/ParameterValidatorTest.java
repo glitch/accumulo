@@ -16,10 +16,10 @@
  */
 package org.apache.accumulo.monitor.util;
 
+import java.util.regex.Pattern;
+
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.regex.Pattern;
 
 /**
  * Basic tests for ParameterValidator
@@ -32,23 +32,31 @@ public class ParameterValidatorTest {
     Assert.assertTrue(p.matcher("asdlkfj234kj324").matches());
     Assert.assertFalse(p.matcher("234-324").matches());
     Assert.assertFalse(p.matcher("").matches());
-    
+
     p = Pattern.compile(ParameterValidator.ALPHA_NUM_REGEX_BLANK_OK);
     Assert.assertTrue(p.matcher("asdlkfj234kj324").matches());
     Assert.assertTrue(p.matcher("").matches());
     Assert.assertFalse(p.matcher("234-324").matches());
   }
-  
+
   @Test
   public void testServerRegex() throws Exception {
     Pattern p = Pattern.compile(ParameterValidator.SERVER_REGEX);
-    Assert.assertTrue(p.matcher("ab3cd.12d34.3xyz.net").matches());
-    Assert.assertTrue(p.matcher("abcd.123.server-foo.com").matches());
-    
-    Assert.assertFalse(p.matcher("abcd.1234.*.xyz").matches());
+    Assert.assertTrue("Did not match hostname with dots", p.matcher("ab3cd.12d34.3xyz.net").matches());
+    Assert.assertTrue("Did not match hostname with dash", p.matcher("abcd.123.server-foo.com").matches());
+    Assert.assertTrue("Did not match hostname and port", p.matcher("abcd.123.server-foo.com:1234").matches());
+    Assert.assertTrue("Did not match all numeric", p.matcher("127.0.0.1").matches());
+    Assert.assertTrue("Did not match all numeric and port", p.matcher("127.0.0.1:9999").matches());
+    Assert.assertTrue("Did not match all numeric and port", p.matcher("ServerName:9999").matches());
 
-    // TODO would you ever have a port number in tserverAddress?
-    // abc-xyz.server:1234 or 192.168.1.1:9999
+    Assert.assertFalse(p.matcher("abcd.1234.*.xyz").matches());
+    Assert.assertFalse(p.matcher("abcd.1234.;xyz").matches());
+    Assert.assertFalse(p.matcher("abcd.12{3}4.xyz").matches());
+    Assert.assertFalse(p.matcher("abcd.12[3]4.xyz").matches());
+    Assert.assertFalse(p.matcher("abcd=4.xyz").matches());
+    Assert.assertFalse(p.matcher("abcd=\"4.xyz\"").matches());
+    Assert.assertFalse(p.matcher("abcd\"4.xyz\"").matches());
+
   }
-  
+
 }

@@ -16,6 +16,10 @@
  */
 package org.apache.accumulo.monitor.view;
 
+import static org.apache.accumulo.monitor.util.ParameterValidator.ALPHA_NUM_REGEX;
+import static org.apache.accumulo.monitor.util.ParameterValidator.ALPHA_NUM_REGEX_BLANK_OK;
+import static org.apache.accumulo.monitor.util.ParameterValidator.SERVER_REGEX_BLANK_OK;
+
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.List;
@@ -41,10 +45,6 @@ import org.apache.accumulo.core.util.AddressUtil;
 import org.apache.accumulo.monitor.Monitor;
 import org.apache.commons.lang.StringUtils;
 import org.glassfish.jersey.server.mvc.Template;
-
-import static org.apache.accumulo.monitor.util.ParameterValidator.ALPHA_NUM_REGEX;
-import static org.apache.accumulo.monitor.util.ParameterValidator.ALPHA_NUM_REGEX_BLANK_OK;
-import static org.apache.accumulo.monitor.util.ParameterValidator.SERVER_REGEX_BLANK_OK;
 
 /**
  *
@@ -202,10 +202,9 @@ public class WebViews {
   @Path("vis")
   @Template(name = "/default.ftl")
   public Map<String,Object> getServerActivity(@QueryParam("shape") @DefaultValue("circles") @Pattern(regexp = ALPHA_NUM_REGEX_BLANK_OK) String shape,
-                                              @QueryParam("size") @DefaultValue("40") @Min(1) @Max(100) int size,
-                                              @QueryParam("motion") @DefaultValue("") @Pattern(regexp = ALPHA_NUM_REGEX_BLANK_OK) String motion,
-                                              @QueryParam("color") @DefaultValue("allavg") @Pattern(regexp = ALPHA_NUM_REGEX_BLANK_OK) String color) {
-
+      @QueryParam("size") @DefaultValue("40") @Min(1) @Max(100) int size,
+      @QueryParam("motion") @DefaultValue("") @Pattern(regexp = ALPHA_NUM_REGEX_BLANK_OK) String motion, @QueryParam("color") @DefaultValue("allavg") @Pattern(
+          regexp = ALPHA_NUM_REGEX_BLANK_OK) String color) {
 
     shape = StringUtils.isNotBlank(shape) ? shape : "circles";
     color = StringUtils.isNotBlank(color) ? color : "allavg";
@@ -251,7 +250,8 @@ public class WebViews {
   @GET
   @Path("tables/{tableID}")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getTables(@PathParam("tableID") @NotNull @Pattern(regexp = ALPHA_NUM_REGEX) String tableID) throws TableNotFoundException, UnsupportedEncodingException {
+  public Map<String,Object> getTables(@PathParam("tableID") @NotNull @Pattern(regexp = ALPHA_NUM_REGEX) String tableID) throws TableNotFoundException,
+      UnsupportedEncodingException {
 
     String tableName = Tables.getTableName(Monitor.getContext().getInstance(), new Table.ID(tableID));
 
@@ -299,8 +299,8 @@ public class WebViews {
   @GET
   @Path("trace/listType")
   @Template(name = "/default.ftl")
-  public Map<String,Object> getTracesForType(@QueryParam("type") @NotNull @Pattern(regexp = ALPHA_NUM_REGEX) String type, 
-                                             @QueryParam("minutes") @DefaultValue("10") @Min(0) @Max(2592000) int minutes) {
+  public Map<String,Object> getTracesForType(@QueryParam("type") @NotNull @Pattern(regexp = ALPHA_NUM_REGEX) String type,
+      @QueryParam("minutes") @DefaultValue("10") @Min(0) @Max(2592000) int minutes) {
     Map<String,Object> model = getModel();
     model.put("title", "Traces for " + type + " for the last " + String.valueOf(minutes) + " minute(s)");
 

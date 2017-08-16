@@ -23,12 +23,12 @@ public interface ParameterValidator {
 
   String ALPHA_NUM_REGEX = "\\w+";
   String ALPHA_NUM_REGEX_BLANK_OK = "\\w*";
-  
+
   String RESOURCE_REGEX = "(\\w|:)+";
-  
+
   String NAMESPACE_REGEX = "[*-]?|(\\w)+";
   String NAMESPACE_LIST_REGEX = "[*-]?|(\\w+,?\\w*)+";
-  
-  String SERVER_REGEX = "(\\w+(\\.)*\\w*)+";
+
+  String SERVER_REGEX = "(\\w+([.-])*\\w*)+(:[0-9]+)*";
   String SERVER_REGEX_BLANK_OK = "(\\w+(\\.)*\\w*)*";
 }
