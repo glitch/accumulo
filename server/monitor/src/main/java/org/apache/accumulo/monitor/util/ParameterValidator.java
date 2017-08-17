@@ -30,5 +30,5 @@ public interface ParameterValidator {
   String NAMESPACE_LIST_REGEX = "[*-]?|(\\w+,?\\w*)+";
 
   String SERVER_REGEX = "(\\w+([.-])*\\w*)+(:[0-9]+)*";
-  String SERVER_REGEX_BLANK_OK = "(\\w+(\\.)*\\w*)*";
+  String SERVER_REGEX_BLANK_OK = "((\\w+([.-])*\\w*)+(:[0-9]+)*)*";
 }

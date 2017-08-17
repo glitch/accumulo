@@ -86,7 +86,6 @@
         <include>org.glassfish.web:javax.el</include>
         <include>org.glassfish.web:javax.el-impl</include>
         <include>org.hibernate:hibernate-validator</include>
-        <include>org.hibernate:hibernate-validator-cdi</include>
         <include>org.javassist:javassist</include>
         <include>org.jboss.logging:jboss-logging</include>
         <include>log4j:log4j</include>

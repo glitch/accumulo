@@ -57,6 +57,12 @@ public class ParameterValidatorTest {
     Assert.assertFalse(p.matcher("abcd=\"4.xyz\"").matches());
     Assert.assertFalse(p.matcher("abcd\"4.xyz\"").matches());
 
+    Pattern q = Pattern.compile(ParameterValidator.SERVER_REGEX_BLANK_OK);
+    Assert.assertTrue(q.matcher("abcd:9997").matches());
+    Assert.assertTrue(q.matcher("abcd.123:9997").matches());
+    Assert.assertTrue(q.matcher("abcd.123-xyz:9997").matches());
+    Assert.assertTrue(q.matcher("abcd.123-xyz").matches());
+    Assert.assertTrue(q.matcher("").matches());
   }
 
 }
